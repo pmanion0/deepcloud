@@ -1,0 +1,13 @@
+aws_region: us-east-1
+
+# Instance Configuration
+instance_type: p2.xlarge
+spot_price: 0.35
+
+# Amazon Linux 2
+#ami_id: ami-087379093eeda94ae
+
+# Ubuntu
+ami_id: ami-0d96d570269578cd7
+
+vpc_id: vpc-f7644a8e
