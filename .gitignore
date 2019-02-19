@@ -1,0 +1,9 @@
+*.pyc
+*.swp
+__pycache__
+.DS_Store
+.cache
+
+ansible/remote_files/aws_credentials
+ansible/remote_files/known_hosts
+ansible/*.retry

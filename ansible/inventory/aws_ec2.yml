@@ -1,0 +1,13 @@
+plugin: aws_ec2
+boto_profile: default
+regions:
+  - us-east-1
+#group_by:
+## makes a group for instances that have the tag values 'thaumos' and 't2.micro' instance type.
+#  - tag-value=thaumos
+#  - instance-type=t2.micro
+filters: 
+#  tag:Name: blogger
+#  tag:env: Production
+  instance-state-name: running
+strict_permissions: False

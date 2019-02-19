@@ -1,0 +1,10 @@
+aws_region: us-east-1
+
+# Instance Configuration
+instance_type: t2.small
+spot_price: 0.01
+
+# Amazon Linux 2
+ami_id: ami-013be31976ca2c322
+
+vpc_id: vpc-f7644a8e
