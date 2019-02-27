@@ -1,0 +1,117 @@
+---
+# Basic provisioning example
+- name: Create Deep Learning Instance
+  hosts: localhost
+  gather_facts: no
+  connection: local
+  vars:
+    gcp_project: "{{ project }}"
+    gcp_cred_kind: "{{ lookup('env', 'GCP_AUTH_KIND') }}"
+    gcp_cred_file: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_FILE') }}"
+    accelerator_type: "{{ accelerator_type }}"
+    accelerator_count: "{{ 1 if accelerator_type else '' }}"
+    preemptible: "{{ preemptible_yesno }}"
+    zone: "{{ zone }}"
+
+  tasks:
+    - name: Create PyTorch/CUDA Compatible Boot Disk
+      gcp_compute_disk:
+        name: 'disk-instance'
+        source_image: 'projects/deeplearning-platform-release/global/images/family/pytorch-latest-cu92'
+        zone: "{{ zone }}"
+        project: "{{ gcp_project }}"
+        auth_kind: "{{ gcp_cred_kind }}"
+        service_account_file: "{{ gcp_cred_file }}"
+        scopes:
+          - https://www.googleapis.com/auth/compute
+        state: present
+      register: disk
+    #- name: Create Basic Network
+    #  gcp_compute_network:
+    #    name: 'network-instance'
+    #    project: "{{ gcp_project }}"
+    #    auth_kind: "{{ gcp_cred_kind }}"
+    #    service_account_file: "{{ gcp_cred_file }}"
+    #    scopes:
+    #      - https://www.googleapis.com/auth/compute
+    #    state: present
+    #  register: network
+    #- name: Createa an External IP
+    #  gcp_compute_address:
+    #    name: 'address-instance'
+    #    region: "{{ region }}"
+    #    project: "{{ gcp_project }}"
+    #    auth_kind: "{{ gcp_cred_kind }}"
+    #    service_account_file: "{{ gcp_cred_file }}"
+    #    scopes:
+    #      - https://www.googleapis.com/auth/compute
+    #    state: present
+    #  register: address
+    - name: Create the Deep Learning VM
+      gcp_compute_instance:
+        state: present
+        name: deep-vm
+        machine_type: n1-highmem-2
+        metadata: '{"install-nvidia-driver": "True"}'
+        zone: "{{ zone }}"
+        project: "{{ gcp_project }}"
+        auth_kind: "{{ gcp_cred_kind }}"
+        service_account_file: "{{ gcp_cred_file }}"
+        scheduling:
+          preemptible: "{{ preemptible }}"
+          on_host_maintenance: TERMINATE
+        tags:
+          items:
+            deeplearning
+        # Apply a GPU accelerator only if one was provided
+        guest_accelerators:
+          - accelerator_count: 1
+            accelerator_type: 'projects/{{ gcp_project }}/zones/{{ zone }}/acceleratorTypes/{{ accelerator_type }}'
+        disks:
+          - auto_delete: true
+            boot: true
+            source: "{{ disk }}"
+        network_interfaces:
+          - access_configs:
+              - name: 'External NAT'
+                type: 'ONE_TO_ONE_NAT'
+                #nat_ip: "{{ address }}"
+            #network: "{{ network }}"
+        scopes:
+          - https://www.googleapis.com/auth/compute
+      register: instance
+    - debug: var=instance
+    - name: Wait for SSH to come up
+      wait_for: host={{ instance.public_ip }} port=22 delay=10 timeout=60
+
+# ------ Run Setup on the EC2 Instances --------- #
+#- hosts: gcp_compute
+#  vars:
+#    ansible_host_key_checking: false
+#    ansible_ssh_private_key_file: "~/.ssh/{{ ssh_key_name }}.pem"
+#  remote_user: ec2-user
+#  #become: yes
+#  gather_facts: no
+#  tasks:
+#  - name: Upload GitHub SSH key 
+#    copy:
+#        src: ~/.ssh/github_rsa
+#        dest: ~/.ssh/
+#        owner: ec2-user
+#        group: ec2-user
+#        mode: 0600
+#  - name: Upload Project Specific SSH Keys
+#    copy:
+#        src: remote_files/
+#        dest: ~/.ssh/
+#        owner: ec2-user
+#        group: ec2-user
+#        mode: 0600
+#  - name: 'install python3 and git'
+#    raw: 'sudo yum install python3 -y'
+#    raw: 'sudo yum install git -y'
+#  - name: Clone the RealRL repository
+#    git:
+#        repo: git@github.com:theforager/Bonsai.git
+#        dest: ~/Bonsai
+#        key_file: ~/.ssh/github_rsa

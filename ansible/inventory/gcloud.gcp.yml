@@ -1,0 +1,8 @@
+plugin: gcp_compute
+projects:
+  - deep-learning-232504
+#regions:
+#  - us-east1-b
+filters:
+auth_kind: serviceaccount # Use $GCP_AUTH_KIND
+service_account_file: ~/.ssh/gcloud/deep-learning.json #/Users/southbranchgov/.ssh/gcloud/deep-learning.json # Use $GCP_SERVICE_ACCOUNT_FILE
