@@ -9,7 +9,6 @@
     gcp_cred_kind: "{{ lookup('env', 'GCP_AUTH_KIND') }}"
     gcp_cred_file: "{{ lookup('env', 'GCP_SERVICE_ACCOUNT_FILE') }}"
     accelerator_type: "{{ accelerator_type }}"
-    accelerator_count: "{{ 1 if accelerator_type else '' }}"
     preemptible: "{{ preemptible_yesno }}"
     zone: "{{ zone }}"
 
@@ -47,7 +46,8 @@
     #      - https://www.googleapis.com/auth/compute
     #    state: present
     #  register: address
-    - name: Create the Deep Learning VM
+    - name: Create the Deep Learning VM *without GPU*
+      when: accelerator_type == ""
       gcp_compute_instance:
         state: present
         name: deep-vm
@@ -63,7 +63,34 @@
         tags:
           items:
             deeplearning
-        # Apply a GPU accelerator only if one was provided
+        disks:
+          - auto_delete: true
+            boot: true
+            source: "{{ disk }}"
+        network_interfaces:
+          - access_configs:
+              - name: 'External NAT'
+                type: 'ONE_TO_ONE_NAT'
+        scopes:
+          - https://www.googleapis.com/auth/compute
+      register: instance
+    - name: Create the Deep Learning VM *with GPU(s)*
+      when: accelerator_type != ""
+      gcp_compute_instance:
+        state: present
+        name: deep-vm
+        machine_type: n1-highmem-2
+        metadata: '{"install-nvidia-driver": "True"}'
+        zone: "{{ zone }}"
+        project: "{{ gcp_project }}"
+        auth_kind: "{{ gcp_cred_kind }}"
+        service_account_file: "{{ gcp_cred_file }}"
+        scheduling:
+          preemptible: "{{ preemptible }}"
+          on_host_maintenance: TERMINATE
+        tags:
+          items:
+            deeplearning
         guest_accelerators:
           - accelerator_count: 1
             accelerator_type: 'projects/{{ gcp_project }}/zones/{{ zone }}/acceleratorTypes/{{ accelerator_type }}'
@@ -80,9 +107,8 @@
         scopes:
           - https://www.googleapis.com/auth/compute
       register: instance
-    - debug: var=instance
     - name: Wait for SSH to come up
-      wait_for: host={{ instance.public_ip }} port=22 delay=10 timeout=60
+      wait_for: host={{ instance.networkInterfaces.accessConfigs.natIP }} port=22 delay=10 timeout=60
 
 # ------ Run Setup on the EC2 Instances --------- #
 #- hosts: gcp_compute

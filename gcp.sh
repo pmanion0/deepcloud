@@ -11,7 +11,11 @@
 #
 # --------------------------------------- #
 
-GITHUB_KEY=~/.ssh/github_rsa
+# Define the default options
+PREEMPTIBLE="no"
+ZONE="us-central1-a"
+PROJECT="deep-learning-232504"
+ACCELERATOR_TYPE=""
 
 # --------------------------------------- #
 #         RUN PARAMETER CHECKS            #
@@ -33,8 +37,8 @@ if [[ $ACTION == "launch" && -z "$OPTION" ]]; then
 fi
 
 if [[ $ACTION == "connect" && -z "$OPTION" ]]; then
-  echo "ERROR: Please provide EC2 IP after setup command"
-  echo "EXAMPLE: ./gcp.sh connect 12.32.46.83"
+  echo "ERROR: Please provide GCP instance name after setup command"
+  echo "EXAMPLE: ./gcp.sh connect deep-vm"
   exit 1
 fi
 
@@ -43,13 +47,8 @@ fi
 #  RUN AWS LAUNCH / SETUP / CONNECT       #
 # --------------------------------------- #
 
-PROJECT="deep-learning-232504"
-ZONE="us-central1-a"
-
 if [[ $ACTION == "launch" ]]; then
   INSTANCE_TYPE=$OPTION
-  ACCELERATOR_TYPE="nvidia-tesla-k80"
-  PREEMPTIBLE="yes"
 
   echo "LAUNCHING..."
   ansible-playbook ansible/gcloud-setup.yml -vv \
@@ -57,9 +56,9 @@ if [[ $ACTION == "launch" ]]; then
     --extra-vars "project=$PROJECT zone=$ZONE preemptible=$PREEMPTIBLE instance_type=$INSTANCE_TYPE accelerator_type=$ACCELERATOR_TYPE"
 
 elif [[ $ACTION == "connect" ]]; then
-  EC2_IP_ADDRESS=$OPTION
+  INSTANCE_NAME=$OPTION
 
   echo "CONNECTING TO GCP..."
-  gcloud compute --project $PROJECT ssh --zone $ZONE "deep-vm" -- -L 7777:localhost:8080
+  gcloud compute --project $PROJECT ssh --zone $ZONE $INSTANCE_NAME -- -L 7777:localhost:8080
 
 fi
