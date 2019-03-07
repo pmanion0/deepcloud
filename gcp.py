@@ -14,29 +14,38 @@
 import argparse
 import subprocess
 
+show_defaults = argparse.ArgumentDefaultsHelpFormatter
+
 # Parse the required arguments
-parser = argparse.ArgumentParser(description='Setup GCP')
+parser = argparse.ArgumentParser(description='Manage GCP instances for deep learning',
+        formatter_class = argparse.ArgumentDefaultsHelpFormatter)
 subparser = parser.add_subparsers(dest='command')
 
-launch_parser = subparser.add_parser('launch', help='Launch a new GCP instance')
-connect_parser = subparser.add_parser('connect', help='Connect to an existing GCP instance')
+launch_parser = subparser.add_parser('launch', formatter_class=show_defaults,
+        help='Launch a new GCP instance')
+connect_parser = subparser.add_parser('connect', formatter_class=show_defaults,
+        help='Connect to an existing GCP instance')
 
+# Add Required Arguments
+for p in [launch_parser, connect_parser]:
+  p.add_argument('project',
+        help='GCP Project name')
+  p.add_argument('instance',
+        help='Instance name')
+
+# Add Optional Arguments
+for p in [launch_parser, connect_parser]:
+  p.add_argument('--zone', required = False, default='us-central1-a',
+        help='Zone for the instance')
 
 launch_parser.add_argument('--machine', required = False, default='n1-highmem-2',
-        help='Machine type for the instance')
+        help='Instance machine type')
 launch_parser.add_argument('--gpu', required = False, default='none',
-        help='Toggles using one GPU of the provided type; types include nvidia-tesla-k80, nvidia-tesla-v100')
+        choices = ['none', 'nvidia-tesla-k80', 'nvidia-tesla-v100'],
+        help='Toggles using the provided GPU type')
 launch_parser.add_argument('--preemptible', required = False, default='no',
         action='store_const', const='yes',
-        help='Setup a pre-emptible (spot) instance to save cost')
-
-for p in [launch_parser, connect_parser]:
-  p.add_argument('--project', required = True,
-        help='Name of the project in GCP')
-  p.add_argument('--instance', required = True,
-        help='Name of the instance in GCP (required)')
-  p.add_argument('--zone', required = False, default='us-central1-a',
-        help='Runs the instance in the requested zone')
+        help='Setup a lower cost but pre-emptible instance')
 
 args = parser.parse_args()
 
@@ -62,7 +71,7 @@ if args.command == 'launch':
 
   subprocess.run(cmd, shell=True)
 
-else:
+if args.command == 'connect':
   print(f'''
     Connect Settings:
         Instance Name: {args.instance}
