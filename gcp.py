@@ -75,6 +75,8 @@ if args.command == 'connect':
   print(f'''
     Connect Settings:
         Instance Name: {args.instance}
+        GCP Project: {args.project}
+        GCP Zone: {args.zone}
   ''')
 
   print("CONNECTING TO GCP...")
