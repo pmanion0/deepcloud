@@ -51,7 +51,7 @@
       gcp_compute_instance:
         state: present
         name: "{{ instance_name }}"
-        machine_type: n1-highmem-2
+        machine_type: "{{ instance_type }}"
         metadata: '{"install-nvidia-driver": "True"}'
         zone: "{{ zone }}"
         project: "{{ gcp_project }}"
@@ -78,8 +78,8 @@
       when: accelerator_type != ""
       gcp_compute_instance:
         state: present
-        name: deep-vm
-        machine_type: n1-highmem-2
+        name: "{{ instance_name }}"
+        machine_type: "{{ instance_type }}"
         metadata: '{"install-nvidia-driver": "True"}'
         zone: "{{ zone }}"
         project: "{{ gcp_project }}"
