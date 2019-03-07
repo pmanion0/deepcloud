@@ -67,7 +67,7 @@ if args.command == 'launch':
     -i ansible/inventory/gcloud.gcp.yml \
     --extra-vars "project={args.project} zone={args.zone} \
       preemptible={args.preemptible} instance_type={args.machine} \
-      accelerator_type={args.gpu}"'
+      accelerator_type={args.gpu} instance_name={args.instance}"'
 
   subprocess.run(cmd, shell=True)
 
